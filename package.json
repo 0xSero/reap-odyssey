@@ -1,0 +1,25 @@
+{
+  "name": "reap-odyssey",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next build && next export"
+  },
+  "dependencies": {
+    "next": "15.1.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "resolutions": {
+    "next": "15.1.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  }
+}
