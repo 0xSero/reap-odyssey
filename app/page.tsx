@@ -87,7 +87,7 @@ const REAPOdyssey = () => {
         },
         {
           url: 'https://x.com/0xSero/status/1984522321994842585',
-          quote: 'Cerebras REAP lets you compress 70B models by 40% with minimal quality loss. This is huge for democratizing AI.',
+          quote: 'Sneak peek at running all the evals on various GLM-4.5-Air quants and REAP',
           impressions: 25847,
         },
       ],
