@@ -2,6 +2,33 @@
 
 import React, { useEffect, useState } from 'react';
 
+type LinkItem = {
+  label: string;
+  url: string;
+};
+
+type Point = string | LinkItem;
+
+type ResumeItem = {
+  title: string;
+  meta?: string;
+  value?: string;
+  detail?: string;
+  points?: Point[];
+  link?: LinkItem;
+  tag?: string;
+};
+
+type ResumePhase = {
+  id: string;
+  title: string;
+  subtitle: string;
+  date: string;
+  day: number;
+  countLabel: string;
+  items: ResumeItem[];
+};
+
 const RESUME = {
   name: '0xSero',
   title: 'Emerging Tech Consultant • AI • Blockchain • Automation',
@@ -34,10 +61,7 @@ const RESUME = {
     {
       role: 'AI Lead — Thrive Protocol',
       period: '2024 – Present',
-      highlights: [
-        'ZK proof systems for on-chain metrics',
-        'Decentralized impact verification',
-      ],
+      highlights: ['ZK proof systems for on-chain metrics', 'Decentralized impact verification'],
     },
     {
       role: 'Grant — Ethereum Foundation',
@@ -70,22 +94,10 @@ const RESUME = {
     { name: 'Orchestra', desc: 'Agent orchestration', stars: '203★' },
   ],
   skills: [
-    {
-      label: 'AI/ML',
-      items: ['REAP', 'LoRA', 'RAG', 'vLLM', 'MLX', 'PyTorch'],
-    },
-    {
-      label: 'Blockchain',
-      items: ['Solidity', 'ZK proofs', 'EVM', 'L2s'],
-    },
-    {
-      label: 'Languages',
-      items: ['TypeScript', 'Python', 'Rust', 'Solidity'],
-    },
-    {
-      label: 'Infra',
-      items: ['Docker', 'Linux', '4×3090 homelab'],
-    },
+    { label: 'AI/ML', items: ['REAP', 'LoRA', 'RAG', 'vLLM', 'MLX', 'PyTorch'] },
+    { label: 'Blockchain', items: ['Solidity', 'ZK proofs', 'EVM', 'L2s'] },
+    { label: 'Languages', items: ['TypeScript', 'Python', 'Rust', 'Solidity'] },
+    { label: 'Infra', items: ['Docker', 'Linux', '4×3090 homelab'] },
   ],
   community: [
     {
@@ -121,47 +133,124 @@ const RESUME = {
   ],
 };
 
-const sectionOrder = [
-  { id: 'experience', label: 'Experience' },
-  { id: 'openSource', label: 'Open Source' },
-  { id: 'skills', label: 'Skills' },
-  { id: 'community', label: 'Community & Education' },
-  { id: 'metrics', label: 'Metrics' },
-  { id: 'featured', label: 'Featured Work' },
+const phases: ResumePhase[] = [
+  {
+    id: 'experience',
+    title: 'Experience',
+    subtitle: 'Operator roles and research arcs',
+    date: '2022 → Present',
+    day: 1,
+    countLabel: 'roles',
+    items: RESUME.experience.map((entry) => ({
+      title: entry.role,
+      meta: entry.period,
+      points: entry.highlights,
+    })),
+  },
+  {
+    id: 'open-source',
+    title: 'Open Source',
+    subtitle: 'Shipping at community scale',
+    date: 'Global projects',
+    day: 2,
+    countLabel: 'projects',
+    items: RESUME.openSource.map((project) => ({
+      title: project.name,
+      detail: project.desc,
+      value: project.stars,
+    })),
+  },
+  {
+    id: 'skills',
+    title: 'Skills',
+    subtitle: 'Tooling across the stack',
+    date: 'Current focus',
+    day: 3,
+    countLabel: 'domains',
+    items: RESUME.skills.map((group) => ({
+      title: group.label,
+      detail: group.items.join(' • '),
+    })),
+  },
+  {
+    id: 'community',
+    title: 'Community & Education',
+    subtitle: 'Builders and programs',
+    date: 'Warsaw & beyond',
+    day: 4,
+    countLabel: 'initiatives',
+    items: RESUME.community.map((entry) => ({
+      title: entry.role,
+      detail: entry.detail,
+      link: entry.link,
+    })),
+  },
+  {
+    id: 'metrics',
+    title: 'Metrics',
+    subtitle: 'Live signals',
+    date: 'Weekly / monthly',
+    day: 5,
+    countLabel: 'signals',
+    items: RESUME.metrics.map((metric) => ({
+      title: metric.label,
+      value: metric.value,
+    })),
+  },
+  {
+    id: 'featured',
+    title: 'Featured Work',
+    subtitle: 'Select systems',
+    date: 'Recent highlights',
+    day: 6,
+    countLabel: 'projects',
+    items: RESUME.featured.map((item) => ({
+      title: item.title,
+      detail: item.desc,
+    })),
+  },
 ];
 
 const ResumePage = () => {
   const [entered, setEntered] = useState(false);
   const [scrollY, setScrollY] = useState(0);
-  const [activeSection, setActiveSection] = useState(0);
+  const [activePhase, setActivePhase] = useState(0);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
-    const handleResize = () => setIsMobile(window.innerWidth < 900);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
 
     handleResize();
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleResize);
 
-    const welcomeTimer = window.setTimeout(() => setEntered(true), 1200);
-
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
-      window.clearTimeout(welcomeTimer);
     };
   }, []);
 
-  const heroAlign = isMobile ? 'flex-start' : 'flex-end';
-  const heroTextAlign = isMobile ? 'left' : 'right';
-  const sectionWidth = isMobile ? '100%' : '700px';
-  const heroShift = Math.min(28, scrollY * 0.08);
-  const timelineShift = Math.min(40, scrollY * 0.06);
+  const renderPoint = (point: Point) => {
+    if (typeof point === 'string') return point;
+
+    return (
+      <a
+        href={point.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: 'rgba(200, 170, 120, 0.75)', textDecoration: 'none' }}
+      >
+        {point.label}
+      </a>
+    );
+  };
 
   if (!entered) {
     return (
       <div
+        onClick={() => setEntered(true)}
         style={{
           minHeight: '100vh',
           backgroundColor: '#1a1918',
@@ -169,43 +258,62 @@ const ResumePage = () => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          cursor: 'pointer',
           position: 'relative',
           overflow: 'hidden',
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          padding: '24px',
+          padding: '20px',
         }}
       >
         <div
           style={{
             position: 'absolute',
-            width: '360px',
-            height: '360px',
+            width: '400px',
+            height: '400px',
             borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(180, 140, 90, 0.1) 0%, transparent 70%)',
-            filter: 'blur(55px)',
+            filter: 'blur(60px)',
+            animation: 'pulse 4s ease-in-out infinite',
           }}
         />
+
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={`resume-dot-${i}`}
+            style={{
+              position: 'absolute',
+              width: '2px',
+              height: '2px',
+              backgroundColor: 'rgba(180, 150, 100, 0.25)',
+              borderRadius: '50%',
+              left: `${15 + Math.random() * 70}%`,
+              top: `${15 + Math.random() * 70}%`,
+              animation: `float ${4 + Math.random() * 3}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
 
         <div
           style={{
             fontSize: '9px',
             letterSpacing: '0.4em',
             color: 'rgba(180, 150, 100, 0.5)',
-            marginBottom: '18px',
+            marginBottom: '28px',
             fontFamily: 'monospace',
             textTransform: 'uppercase',
           }}
         >
-          Welcome
+          Resume
         </div>
 
         <h1
           style={{
-            fontSize: 'clamp(30px, 8vw, 70px)',
+            fontSize: 'clamp(32px, 9vw, 80px)',
             fontWeight: 200,
             letterSpacing: '-0.03em',
             color: 'rgba(245, 240, 230, 0.95)',
-            marginBottom: '12px',
+            marginBottom: '16px',
             textAlign: 'center',
             lineHeight: 1.1,
           }}
@@ -215,11 +323,11 @@ const ResumePage = () => {
 
         <p
           style={{
-            fontSize: '13px',
+            fontSize: '14px',
             color: 'rgba(180, 160, 130, 0.6)',
-            marginBottom: '20px',
+            marginBottom: '48px',
             textAlign: 'center',
-            maxWidth: '360px',
+            maxWidth: '300px',
             lineHeight: 1.7,
             fontWeight: 300,
           }}
@@ -229,215 +337,54 @@ const ResumePage = () => {
 
         <div
           style={{
-            fontSize: '9px',
-            letterSpacing: '0.2em',
-            color: 'rgba(150, 130, 100, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 28px',
+            border: '1px solid rgba(180, 150, 100, 0.2)',
+            borderRadius: '100px',
+            fontSize: '10px',
+            letterSpacing: '0.25em',
+            color: 'rgba(200, 170, 120, 0.7)',
+            animation: 'breathe 2.5s ease-in-out infinite',
             textTransform: 'uppercase',
           }}
         >
-          Loading resume…
+          Enter
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
         </div>
+
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '32px',
+            fontSize: '10px',
+            letterSpacing: '0.2em',
+            color: 'rgba(150, 130, 100, 0.35)',
+          }}
+        >
+          @0xSero
+        </div>
+
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0); opacity: 0.2; }
+            50% { transform: translateY(-20px); opacity: 0.5; }
+          }
+          @keyframes breathe {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+          }
+        `}</style>
       </div>
     );
   }
-
-  const renderSection = (sectionId: string) => {
-    if (sectionId === 'experience') {
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {RESUME.experience.map((item) => (
-            <div
-              key={item.role}
-              style={{
-                padding: '16px 18px',
-                backgroundColor: 'rgba(60, 55, 45, 0.08)',
-                border: '1px solid rgba(120, 100, 70, 0.1)',
-                borderRadius: '10px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ fontSize: '15px', fontWeight: 300, color: 'rgba(245, 240, 230, 0.9)' }}>
-                  {item.role}
-                </div>
-                <div style={{ fontSize: '9px', letterSpacing: '0.12em', color: 'rgba(180, 150, 100, 0.45)' }}>
-                  {item.period}
-                </div>
-              </div>
-              <ul style={{ margin: '10px 0 0 14px', padding: 0, color: 'rgba(210, 195, 170, 0.7)', fontSize: '12px', lineHeight: 1.7 }}>
-                {item.highlights.map((detail) => (
-                  <li key={typeof detail === 'string' ? detail : detail.label} style={{ marginBottom: '4px' }}>
-                    {typeof detail === 'string' ? (
-                      detail
-                    ) : (
-                      <a
-                        href={detail.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: 'rgba(200, 170, 120, 0.7)', textDecoration: 'none' }}
-                      >
-                        {detail.label}
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (sectionId === 'openSource') {
-      return (
-        <div style={{ display: 'grid', gap: '10px' }}>
-          {RESUME.openSource.map((project) => (
-            <div
-              key={project.name}
-              style={{
-                padding: '14px 16px',
-                backgroundColor: 'rgba(60, 55, 45, 0.08)',
-                border: '1px solid rgba(120, 100, 70, 0.1)',
-                borderRadius: '10px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '12px',
-                alignItems: 'center',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '13px', color: 'rgba(240, 230, 210, 0.85)' }}>{project.name}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(180, 160, 130, 0.55)' }}>{project.desc}</div>
-              </div>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(200, 160, 100, 0.75)' }}>
-                {project.stars}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (sectionId === 'skills') {
-      return (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {RESUME.skills.map((group) => (
-            <div
-              key={group.label}
-              style={{
-                padding: '14px 16px',
-                borderRadius: '10px',
-                border: '1px solid rgba(120, 100, 70, 0.1)',
-                backgroundColor: 'rgba(60, 55, 45, 0.08)',
-              }}
-            >
-              <div style={{ fontSize: '10px', letterSpacing: '0.18em', color: 'rgba(180, 150, 100, 0.5)', textTransform: 'uppercase' }}>
-                {group.label}
-              </div>
-              <div style={{ fontSize: '12px', marginTop: '8px', color: 'rgba(220, 205, 185, 0.75)' }}>
-                {group.items.join(' • ')}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (sectionId === 'community') {
-      return (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {RESUME.community.map((entry) => (
-            <div
-              key={entry.role}
-              style={{
-                padding: '14px 16px',
-                borderRadius: '10px',
-                border: '1px solid rgba(120, 100, 70, 0.1)',
-                backgroundColor: 'rgba(60, 55, 45, 0.08)',
-              }}
-            >
-              <div style={{ fontSize: '13px', color: 'rgba(235, 225, 205, 0.85)' }}>{entry.role}</div>
-              <div style={{ fontSize: '11px', color: 'rgba(180, 160, 130, 0.6)', marginTop: '6px' }}>{entry.detail}</div>
-              {entry.link && (
-                <a
-                  href={entry.link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: '10px',
-                    color: 'rgba(200, 170, 120, 0.7)',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    marginTop: '8px',
-                    gap: '6px',
-                    alignItems: 'center',
-                  }}
-                >
-                  {entry.link.label}
-                  <span style={{ fontSize: '10px', opacity: 0.6 }}>↗</span>
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (sectionId === 'metrics') {
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-          {RESUME.metrics.map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                padding: '14px 16px',
-                borderRadius: '10px',
-                border: '1px solid rgba(120, 100, 70, 0.1)',
-                backgroundColor: 'rgba(60, 55, 45, 0.08)',
-              }}
-            >
-              <div style={{ fontSize: '18px', fontFamily: 'monospace', color: 'rgba(200, 160, 100, 0.8)' }}>
-                {stat.value}
-              </div>
-              <div style={{ fontSize: '9px', letterSpacing: '0.12em', color: 'rgba(150, 130, 100, 0.45)' }}>
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (sectionId === 'featured') {
-      return (
-        <div style={{ display: 'grid', gap: '10px' }}>
-          {RESUME.featured.map((item) => (
-            <div
-              key={item.title}
-              style={{
-                padding: '14px 16px',
-                borderRadius: '10px',
-                border: '1px solid rgba(120, 100, 70, 0.1)',
-                backgroundColor: 'rgba(60, 55, 45, 0.08)',
-              }}
-            >
-              <div style={{ fontSize: '13px', color: 'rgba(235, 225, 205, 0.85)' }}>{item.title}</div>
-              <div style={{ fontSize: '11px', color: 'rgba(180, 160, 130, 0.6)', marginTop: '6px' }}>{item.desc}</div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return null;
-  };
 
   return (
     <div
@@ -468,42 +415,37 @@ const ResumePage = () => {
         }}
       />
 
-
       {!isMobile && (
         <nav
           style={{
             position: 'fixed',
-            right: '20px',
+            left: '20px',
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 100,
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            padding: '6px 4px',
-            borderRadius: '999px',
-            border: '1px solid rgba(120, 100, 70, 0.12)',
-            background: 'rgba(26, 25, 24, 0.6)',
-            backdropFilter: 'blur(10px)',
           }}
         >
-          {sectionOrder.map((section, index) => (
+          {phases.map((phase, i) => (
             <a
-              key={section.id}
-              href={`#${section.id}`}
+              key={phase.id}
+              href={`#${phase.id}`}
               onClick={(event) => {
                 event.preventDefault();
-                document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' });
-                setActiveSection(index);
+                document.getElementById(phase.id)?.scrollIntoView({ behavior: 'smooth' });
+                setActivePhase(i);
               }}
               style={{
                 width: '4px',
-                height: activeSection === index ? '24px' : '4px',
+                height: activePhase === i ? '24px' : '4px',
                 borderRadius: '2px',
-                backgroundColor: activeSection === index ? 'rgba(200, 160, 100, 0.8)' : 'rgba(150, 130, 100, 0.2)',
+                backgroundColor: activePhase === i ? 'rgba(200, 160, 100, 0.8)' : 'rgba(150, 130, 100, 0.2)',
                 transition: 'all 0.3s ease',
                 cursor: 'pointer',
               }}
+              title={phase.title}
             />
           ))}
         </nav>
@@ -534,111 +476,122 @@ const ResumePage = () => {
             fontFamily: 'monospace',
           }}
         >
-          Resume
+          RESUME
         </div>
-        <a
-          href="https://sybilsolutions.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(150, 130, 100, 0.4)', textDecoration: 'none' }}
+        <div
+          style={{
+            fontSize: '9px',
+            fontFamily: 'monospace',
+            color: 'rgba(150, 130, 100, 0.4)',
+          }}
         >
-          sybilsolutions.ai
-        </a>
+          {isMobile ? '~1M/wk' : '~1M/wk • 178 repos'}
+        </div>
       </header>
 
       <section
         style={{
-          minHeight: '80vh',
+          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          alignItems: heroAlign,
-          padding: isMobile ? '90px 24px 50px' : '120px 80px 60px',
+          alignItems: 'center',
+          padding: isMobile ? '80px 24px 60px' : '100px 40px 60px',
           position: 'relative',
-          maxWidth: '980px',
-          margin: '0 auto',
         }}
       >
         <div
           style={{
-            alignSelf: heroAlign,
-            textAlign: heroTextAlign as 'left' | 'right',
-            transform: `translateX(${heroShift}px)`
+            opacity: Math.max(0, 1 - scrollY / 300),
+            transform: `translateY(${scrollY * 0.2}px)`,
+            textAlign: 'center',
           }}
         >
-          <div
-            style={{
-              fontSize: '10px',
-              letterSpacing: '0.35em',
-              textTransform: 'uppercase',
-              color: 'rgba(180, 150, 100, 0.5)',
-              marginBottom: '18px',
-              fontFamily: 'monospace',
-            }}
-          >
-            Resume
-          </div>
           <h1
             style={{
-              fontSize: isMobile ? '32px' : 'clamp(38px, 5vw, 56px)',
+              fontSize: isMobile ? '36px' : 'clamp(40px, 6vw, 64px)',
               fontWeight: 200,
-              marginBottom: '14px',
+              letterSpacing: '-0.02em',
+              marginBottom: '16px',
               lineHeight: 1.1,
               color: 'rgba(245, 240, 230, 0.95)',
             }}
           >
             {RESUME.name}
           </h1>
-          <div style={{ fontSize: '13px', color: 'rgba(180, 160, 130, 0.6)', maxWidth: isMobile ? '100%' : '460px', lineHeight: 1.7 }}>
-            {RESUME.title}
-          </div>
-          <div
+          <p
             style={{
-              marginTop: '20px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '10px',
-              justifyContent: heroTextAlign === 'right' ? 'flex-end' : 'flex-start',
+              fontSize: isMobile ? '14px' : '15px',
+              color: 'rgba(180, 160, 130, 0.6)',
+              maxWidth: '420px',
+              lineHeight: 1.7,
+              fontWeight: 300,
+              margin: '0 auto',
             }}
           >
-            {RESUME.links.map((link) => (
-              <a
-                key={link.url}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '999px',
-                  border: '1px solid rgba(120, 100, 70, 0.2)',
-                  fontSize: '10px',
-                  color: 'rgba(200, 170, 120, 0.7)',
-                  textDecoration: 'none',
-                  letterSpacing: '0.08em',
-                }}
-              >
-                {link.label}
-              </a>
+            {RESUME.title}
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: isMobile ? '20px' : '32px',
+              marginTop: '40px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {RESUME.metrics.slice(0, 4).map((stat) => (
+              <div key={stat.label} style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontSize: isMobile ? '20px' : '24px',
+                    fontWeight: 300,
+                    fontFamily: 'monospace',
+                    color: 'rgba(200, 160, 100, 0.8)',
+                  }}
+                >
+                  {stat.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: '9px',
+                    color: 'rgba(150, 130, 100, 0.4)',
+                    letterSpacing: '0.05em',
+                    marginTop: '4px',
+                  }}
+                >
+                  {stat.label}
+                </div>
+              </div>
             ))}
           </div>
         </div>
+
         <div
           style={{
             position: 'absolute',
-            right: isMobile ? '24px' : '60px',
             bottom: '40px',
             opacity: Math.max(0, 1 - scrollY / 120),
           }}
         >
-          <div style={{ width: '1px', height: '34px', backgroundColor: 'rgba(150, 130, 100, 0.15)', position: 'relative' }}>
+          <div
+            style={{
+              width: '1px',
+              height: '32px',
+              backgroundColor: 'rgba(150, 130, 100, 0.15)',
+              margin: '0 auto',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
             <div
               style={{
                 position: 'absolute',
                 width: '100%',
                 height: '12px',
                 backgroundColor: 'rgba(200, 160, 100, 0.5)',
-                animation: 'scrollUp 1.8s ease-in-out infinite',
-                bottom: '-12px',
+                animation: 'scrollLine 1.6s ease-in-out infinite',
               }}
             />
           </div>
@@ -647,52 +600,331 @@ const ResumePage = () => {
 
       <main
         style={{
-          padding: isMobile ? '0 20px 80px' : '0 80px 120px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: isMobile ? 'stretch' : 'flex-end',
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          maxWidth: '1100px',
-          gap: '12px',
+          padding: isMobile ? '0 16px 80px' : '0 40px 100px',
+          marginLeft: isMobile ? 0 : '40px',
         }}
       >
-        {sectionOrder.map((section, index) => (
-          <section
-            key={section.id}
-            id={section.id}
-            style={{
-              paddingTop: isMobile ? '50px' : '70px',
-              width: sectionWidth,
-              alignSelf: isMobile ? 'stretch' : 'flex-end',
-              transform: `translateX(${-timelineShift}px)`,
-              transition: 'transform 0.25s ease-out',
-            }}
-            onMouseEnter={() => setActiveSection(index)}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '20px' }}>
+        {phases.map((phase, phaseIndex) => {
+          const phaseCount = phase.items.length;
+
+          return (
+            <section
+              key={phase.id}
+              id={phase.id}
+              style={{
+                paddingTop: isMobile ? '60px' : '80px',
+                paddingBottom: '20px',
+              }}
+              onMouseEnter={() => setActivePhase(phaseIndex)}
+            >
               <div
                 style={{
-                  fontSize: '10px',
-                  letterSpacing: '0.12em',
-                  color: 'rgba(180, 150, 100, 0.4)',
-                  fontFamily: 'monospace',
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: isMobile ? '16px' : '28px',
+                  alignItems: isMobile ? 'flex-start' : 'flex-start',
+                  marginBottom: '28px',
                 }}
               >
-                {section.label}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '8px',
+                    minWidth: isMobile ? 'auto' : '70px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: isMobile ? '28px' : '36px',
+                      fontWeight: 100,
+                      fontFamily: 'monospace',
+                      color: activePhase === phaseIndex ? 'rgba(200, 160, 100, 0.85)' : 'rgba(150, 130, 100, 0.25)',
+                      transition: 'color 0.3s ease',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {phase.day}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '8px',
+                      letterSpacing: '0.1em',
+                      color: 'rgba(150, 130, 100, 0.35)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    set
+                  </span>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.1em',
+                      color: 'rgba(180, 150, 100, 0.45)',
+                      marginBottom: '8px',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {phase.date}
+                  </div>
+                  <h2
+                    style={{
+                      fontSize: isMobile ? '24px' : '32px',
+                      fontWeight: 200,
+                      marginBottom: '4px',
+                      color: 'rgba(245, 240, 230, 0.95)',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {phase.title}
+                  </h2>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: 'rgba(180, 160, 130, 0.5)',
+                      fontWeight: 300,
+                    }}
+                  >
+                    {phase.subtitle}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: '10px 16px',
+                    background: 'rgba(80, 70, 50, 0.12)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(120, 100, 70, 0.1)',
+                    alignSelf: isMobile ? 'flex-start' : 'flex-start',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 300,
+                      fontFamily: 'monospace',
+                      color: 'rgba(200, 160, 100, 0.8)',
+                    }}
+                  >
+                    {phaseCount}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      color: 'rgba(150, 130, 100, 0.4)',
+                      marginLeft: '6px',
+                    }}
+                  >
+                    {phase.countLabel}
+                  </span>
+                </div>
               </div>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(100, 90, 70, 0.15)' }} />
-            </div>
-            {renderSection(section.id)}
-          </section>
-        ))}
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                {phase.items.map((item, itemIndex) => {
+                  const cardKey = `${phase.id}-${itemIndex}`;
+                  const isHovered = hoveredCard === cardKey;
+                  const topValue = item.value || item.meta;
+
+                  return (
+                    <div
+                      key={cardKey}
+                      onMouseEnter={() => setHoveredCard(cardKey)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                      style={{
+                        display: 'block',
+                        padding: isMobile ? '16px' : '16px 20px',
+                        backgroundColor: isHovered
+                          ? 'rgba(100, 85, 60, 0.18)'
+                          : 'rgba(60, 55, 45, 0.08)',
+                        border: `1px solid ${
+                          isHovered ? 'rgba(180, 150, 100, 0.3)' : 'rgba(120, 100, 70, 0.08)'
+                        }`,
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                        position: 'relative',
+                      }}
+                    >
+                      {item.tag && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '10px',
+                            right: '12px',
+                            fontSize: '7px',
+                            letterSpacing: '0.1em',
+                            padding: '3px 8px',
+                            backgroundColor: 'rgba(200, 160, 100, 0.2)',
+                            color: 'rgba(220, 190, 140, 0.8)',
+                            borderRadius: '3px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {item.tag}
+                        </span>
+                      )}
+
+                      {topValue && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            marginBottom: '8px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '15px',
+                              fontWeight: 400,
+                              fontFamily: 'monospace',
+                              color: 'rgba(210, 170, 110, 0.85)',
+                            }}
+                          >
+                            {topValue}
+                          </span>
+                        </div>
+                      )}
+
+                      <p
+                        style={{
+                          fontSize: isMobile ? '12px' : '13px',
+                          lineHeight: 1.6,
+                          color: 'rgba(220, 210, 190, 0.7)',
+                          margin: 0,
+                        }}
+                      >
+                        {item.title}
+                      </p>
+
+                      {item.detail && (
+                        <p
+                          style={{
+                            marginTop: '10px',
+                            fontSize: '12px',
+                            color: 'rgba(180, 160, 130, 0.6)',
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {item.detail}
+                        </p>
+                      )}
+
+                      {item.points && (
+                        <ul
+                          style={{
+                            marginTop: '10px',
+                            paddingLeft: '16px',
+                            color: 'rgba(200, 190, 170, 0.65)',
+                            fontSize: '12px',
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {item.points.map((point) => (
+                            <li key={typeof point === 'string' ? point : point.label}>{renderPoint(point)}</li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {item.link && (
+                        <div
+                          style={{
+                            marginTop: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            fontSize: '9px',
+                            color: 'rgba(150, 130, 100, 0.35)',
+                          }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                          </svg>
+                          <a
+                            href={item.link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'rgba(200, 180, 150, 0.6)', textDecoration: 'none' }}
+                          >
+                            {item.link.label}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+
+        <div
+          style={{
+            marginTop: '48px',
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+          }}
+        >
+          {RESUME.links.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '10px 14px',
+                backgroundColor: 'rgba(60, 55, 45, 0.1)',
+                border: '1px solid rgba(120, 100, 70, 0.08)',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                color: 'rgba(200, 180, 150, 0.6)',
+                fontSize: '11px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        <footer
+          style={{
+            marginTop: '80px',
+            paddingTop: '28px',
+            borderTop: '1px solid rgba(100, 90, 70, 0.1)',
+          }}
+        >
+          <blockquote
+            style={{
+              fontSize: isMobile ? '14px' : '16px',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              color: 'rgba(200, 180, 150, 0.5)',
+              lineHeight: 1.7,
+              marginBottom: '12px',
+            }}
+          >
+            "Build the tooling so intelligence runs anywhere."
+          </blockquote>
+          <div style={{ fontSize: '11px', color: 'rgba(180, 150, 100, 0.4)' }}>— @0xSero</div>
+        </footer>
       </main>
 
       <style>{`
-        @keyframes scrollUp {
-          0% { bottom: -12px; opacity: 0.2; }
-          50% { bottom: 14px; opacity: 0.9; }
-          100% { bottom: 30px; opacity: 0; }
+        @keyframes scrollLine {
+          0% { top: -12px; }
+          100% { top: 32px; }
         }
         html { scroll-behavior: smooth; }
         * {
