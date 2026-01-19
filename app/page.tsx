@@ -6,7 +6,7 @@ const REAPOdyssey = () => {
   const [entered, setEntered] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [activePhase, setActivePhase] = useState(0);
-  const [hoveredTweet, setHoveredTweet] = useState(null);
+  const [hoveredTweet, setHoveredTweet] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -22,13 +22,32 @@ const REAPOdyssey = () => {
     };
   }, []);
 
-  const formatNumber = (num) => {
+  const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   };
 
-  const phases = [
+  type Tweet = {
+    url: string;
+    quote: string;
+    impressions: number;
+    time?: string;
+    viral?: boolean;
+    peak?: boolean;
+    highlight?: boolean;
+  };
+
+  type Phase = {
+    id: string;
+    title: string;
+    subtitle: string;
+    date: string;
+    day: number;
+    tweets: Tweet[];
+  };
+
+  const phases: Phase[] = [
     {
       id: 'foundation',
       title: 'Foundation',
