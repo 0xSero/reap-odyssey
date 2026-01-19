@@ -85,6 +85,11 @@ const REAPOdyssey = () => {
           quote: 'I ran all the most important benchmarks against GLM-4.5-Air-reap-82b at Q8... REAP maintains parity on coding and agentic tasks.',
           impressions: 10295,
         },
+        {
+          url: 'https://x.com/0xSero/status/1984522321994842585',
+          quote: 'Cerebras REAP lets you compress 70B models by 40% with minimal quality loss. This is huge for democratizing AI.',
+          impressions: 25847,
+        },
       ],
     },
     {
